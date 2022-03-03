@@ -1,0 +1,60 @@
+---
+- name: Install required software
+  package:
+    name: unzip
+    state: present
+
+- name: Set download directory if install only for the user
+  set_fact:
+    kind_runtime_dir: "{{ ansible_user_dir }}/bin"
+  when: not kind_for_all_users | bool
+
+- name: Set download directory for all users to use
+  set_fact:
+    kind_runtime_dir: "/usr/local/bin"
+  when: kind_for_all_users | bool
+
+- name: Create bin directory in users home if necessary for local install
+  ansible.builtin.file:
+    path: "{{ ansible_user_dir }}/bin"
+    state: directory
+    mode: 0755
+  when: not kind_for_all_users | bool
+
+- name: Download file
+  get_url:
+    url: "https://github.com/kubernetes-sigs/kind/releases/download/v{{ kind_version }}/kind-linux-amd64"
+    dest: "/tmp/kind"
+    mode: "0755"
+
+- name: Copy file to runtime directory
+  copy:
+    src: "/tmp/kind"
+    dest: "{{ kind_runtime_dir }}"
+    mode: 0755
+    remote_src: yes
+
+- name: Configure autocompletion for the user only
+  ansible.builtin.lineinfile:
+    path: "{{ ansible_user_dir }}/.{{ command_shell | lower }}rc"
+    regexp: "^source <(kind completion {{ command_shell | lower }})"
+    line: "source <(kind completion {{ command_shell | lower }})"
+  when: not kind_for_all_users
+
+- name: Set global profile file for bash
+  set_fact:
+    global_profile_file: /etc/profile
+  when: kind_for_all_users | bool and command_shell | lower == "bash"
+
+- name: Set global profile file for zsh
+  set_fact:
+    global_profile_file: /etc/zshenv
+  when: kind_for_all_users | bool and command_shell | lower == "zsh"
+
+- name: Configure autocompletion for all users
+  ansible.builtin.lineinfile:
+    path: "{{ global_profile_file }}"
+    regexp: "^source <(kind completion {{ command_shell | lower }})"
+    line: "source <(kind completion {{ command_shell | lower }})"
+  when: kind_for_all_users
+  become: yes

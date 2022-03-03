@@ -1,0 +1,5 @@
+---
+kind_version: 0.11.1
+kind_for_all_users: true
+
+command_shell: bash
