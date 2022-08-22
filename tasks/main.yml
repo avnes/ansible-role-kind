@@ -1,16 +1,16 @@
 ---
 - name: Install required software
-  package:
+  ansible.builtin.package:
     name: unzip
     state: present
 
 - name: Set download directory if install only for the user
-  set_fact:
+  ansible.builtin.set_fact:
     kind_runtime_dir: "{{ ansible_user_dir }}/bin"
   when: not kind_for_all_users | bool
 
 - name: Set download directory for all users to use
-  set_fact:
+  ansible.builtin.set_fact:
     kind_runtime_dir: "/usr/local/bin"
   when: kind_for_all_users | bool
 
@@ -22,13 +22,13 @@
   when: not kind_for_all_users | bool
 
 - name: Download file
-  get_url:
+  ansible.builtin.get_url:
     url: "https://github.com/kubernetes-sigs/kind/releases/download/v{{ kind_version }}/kind-linux-amd64"
     dest: "/tmp/kind"
     mode: "0755"
 
 - name: Copy file to runtime directory
-  copy:
+  ansible.builtin.copy:
     src: "/tmp/kind"
     dest: "{{ kind_runtime_dir }}"
     mode: 0755
@@ -42,12 +42,12 @@
   when: not kind_for_all_users
 
 - name: Set global profile file for bash
-  set_fact:
+  ansible.builtin.set_fact:
     global_profile_file: /etc/profile
   when: kind_for_all_users | bool and command_shell | lower == "bash"
 
 - name: Set global profile file for zsh
-  set_fact:
+  ansible.builtin.set_fact:
     global_profile_file: /etc/zshenv
   when: kind_for_all_users | bool and command_shell | lower == "zsh"
 
